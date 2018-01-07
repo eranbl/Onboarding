@@ -13,7 +13,7 @@ ADD dependencies/server.xml /home/exec/tomcat/conf
 ENV CATALINA_HOME=/home/exec/tomcat
 ENV TEST_ENV=2
 CMD /bin/bash -c cd /home/exec; /home/exec/tomcat/bin/catalina.sh run
-
+### test###
 #ADD dependencies/mooday/my-angular-app.tar.gz /usr/share/nginx/html/
 #CMD /bin/bash -c cd /usr/share/nginx/html/dist/; mv * ../
 
