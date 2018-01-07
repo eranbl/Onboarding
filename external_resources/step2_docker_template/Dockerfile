@@ -3,8 +3,16 @@ FROM docker.onboarding.gcp.ha/ubuntu:16.04
 MAINTAINER Eran Blumenthal eranb@jfrog.com
 
 
+#prepare env for java app
+RUN /bin/bash -c cd ~; cd /home ; mkdir -p exec && \
+    apt update && \
+    apt install openjdk-8-jdk -y && \
 
-RUN /bin/bash -c cd ~; cd /home ; mkdir -p exec
+
+# Expose Tomcat's port
+EXPOSE 8081
+
+
 #ADD dependencies/jdk-8-linux-x64.tar.gz /home/exec
 #RUN /bin/bash -c cd /home/exec; mv /home/exec/jdk1* /home/exec/jdk8
 #ENV JAVA_HOME=/home/exec/jdk8
