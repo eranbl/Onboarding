@@ -6,7 +6,7 @@ MAINTAINER Eran Blumenthal eranb@jfrog.com
 #prepare env for java app
 RUN /bin/bash -c cd ~; cd /home ; mkdir -p work
 
-COPY packages/employees-app.jar /home/work
+COPY /packages/employees-app.jar /home/work
 #CMD java -jar /home/work/employees-app.jar
 
 
