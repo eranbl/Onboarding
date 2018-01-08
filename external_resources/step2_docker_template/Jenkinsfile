@@ -18,6 +18,7 @@ node() {
     stage ('buildinfo'){
         echo "$BUILD_NUMBER"
         def dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER", 'docker'
+        dockerBuildInfo.env.collect()
         rtServer.publishBuildInfo dockerBuildInfo
     }
 
@@ -39,6 +40,9 @@ node() {
                     'copy'               : true
             ]
             rtServer.promote promotionConfig
+
+            sh "curl -i -u\"${USER}\":\"${PASSWORD}\" -XPOST http://${RT_URL}/api/docker/onboarding-docker-prod-local/v2/promote -d '{\"targetRepo\":\"onboarding-docker-prod-local\",\"dockerRepository\":\"onboarding-template\", \"tag\" : \"${BUILD_NUMBER}\", \"targetTag\" : \"prod-approved\"}'  -H \"Content-Type: application/json\" "
+
         }
         else{
             echo 'promotion failed due to error in the docker build'
