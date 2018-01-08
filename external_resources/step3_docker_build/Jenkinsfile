@@ -22,8 +22,7 @@ node() {
                             }
                          ]
                         }"""
-        // /Users/eranb/work/oracle_project/employees-app/external_resources/step3_docker_build
-        ///com/example/employees/employees-app/2.0/employees-app-2.0-jar-with-dependencies.jar
+
         rtServer.download spec: downloadSpec, buildInfo: buildInfo
     }
     stage ('Docker build')

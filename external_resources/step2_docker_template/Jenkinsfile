@@ -28,6 +28,16 @@ node() {
         testResult = testImage('docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER')
     }
 
+    stage ('Xray Scan'){
+        def scanConfig = [
+                'buildName'     : dockerBuildInfo.name,
+                'buildNumber'   : dockerBuildInfo.number,
+                'failBuild'     : false
+        ]
+
+        def scanResult = rtServer.xrayScan scanConfig
+        echo scanResult as String
+    }
 
     stage ('Docker Build Promotion'){
         if(testResult){

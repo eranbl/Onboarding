@@ -10,7 +10,7 @@ RUN /bin/bash -c cd ~; cd /home ; mkdir -p exec && \
 
 
 # Expose Tomcat's port
-EXPOSE 8081
+EXPOSE 8080
 
 
 
