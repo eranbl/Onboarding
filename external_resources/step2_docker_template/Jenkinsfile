@@ -6,6 +6,7 @@ node() {
     def BUILD_NUMBER = currentBuild.number
     def testResult
     def dockerBuildInfo = Artifactory.newBuildInfo()
+    dockerBuildInfo.env.capture = true
 
     stage ('Build'){
         git url: 'https://github.com/eranbl/Onboarding.git'
@@ -19,7 +20,7 @@ node() {
     stage ('buildinfo'){
         echo "$BUILD_NUMBER"
         dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER", 'docker'
-        dockerBuildInfo.env.collect()
+        //dockerBuildInfo.env.collect()
         rtServer.publishBuildInfo dockerBuildInfo
     }
 
