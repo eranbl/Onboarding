@@ -1,0 +1,91 @@
+node() {
+
+    def rtServer = Artifactory.server('RT_GCP_1')
+    def rtDocker = Artifactory.docker server: rtServer
+    def workspace = pwd()
+    def BUILD_NUMBER = currentBuild.number
+    def testResult
+    def dockerBuildInfo = Artifactory.newBuildInfo()
+    dockerBuildInfo.env.capture = true
+
+    stage ('Git Clone'){
+        git url: 'https://github.com/eranbl/Onboarding.git'
+    }
+
+    stage ('Collect Dependencies '){
+        def downloadSpec = """{
+                         "files": [
+                          {
+                              "pattern": "onboarding-maven-release-local/com/example/employees/employees-app/2.0/employees-app-2.0-jar-with-dependencies.jar",
+                              "target": "$workspace/external_resources/step3_docker_build/packages/employees-app.jar",
+                              "flat":"true"
+                            }
+                         ]
+                        }"""
+        // /Users/eranb/work/oracle_project/employees-app/external_resources/step3_docker_build
+        ///com/example/employees/employees-app/2.0/employees-app-2.0-jar-with-dependencies.jar
+        rtServer.download spec: downloadSpec, buildInfo: dockerBuildInfo
+    }
+    stage ('Docker build')
+    dir ('external_resources/step3_docker_build'){
+        docker.build('docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER')
+    }
+
+    stage ('buildinfo'){
+        echo "$BUILD_NUMBER"
+        dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER", 'docker'
+        //dockerBuildInfo.env.collect()
+        rtServer.publishBuildInfo dockerBuildInfo
+    }
+
+    stage ('Docker Test'){
+        testResult = testImage('docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER')
+    }
+
+
+    stage ('Docker Build Promotion'){
+        if(testResult){
+            def promotionConfig = [
+                    'buildName'          : env.JOB_NAME,
+                    'buildNumber'        : env.BUILD_NUMBER,
+                    'targetRepo'         : 'onboarding-docker-release-local',
+                    //'comment'            : 'Framework test with latest version of application',
+                    'sourceRepo'         : 'onboarding-docker-dev-local',
+                    'status'             : 'Released',
+                    'includeDependencies': false,
+                    'copy'               : true
+            ]
+            rtServer.promote promotionConfig
+
+            sh "curl -i -u\"${USER}\":\"${PASSWORD}\" -XPOST http://${RT_URL}/api/docker/onboarding-docker-release-local/v2/promote -d '{\"targetRepo\":\"onboarding-docker-release-local\",\"dockerRepository\":\"onboarding-docker-app\", \"tag\" : \"${BUILD_NUMBER}\", \"targetTag\" : \"release-approved\", \"copy\": true}'  -H \"Content-Type: application/json\" "
+
+        }
+        else{
+            echo 'promotion failed due to error in the docker build'
+        }
+    }
+}
+/*--------------------------------------------------------------------------------*/
+
+def testImage(tag){
+    def result = true
+    docker.image(tag).withRun('-p 8095:8080') {c ->
+        sleep 10
+        //def stdout = sh(script: 'curl "http://localhost:8095/employee/"', returnStdout: true)
+        //Employees
+        /*def statusCode = sh(script: 'java -version', returnStatus: true)
+        println stdout
+        if (stdout.contains("Employees")){
+            println "*** Passed Test: " + stdout
+        }
+        else {
+            println "*** Failed Test: " + stdout
+            result = false
+        }*/
+    }
+    return result
+}
+
+
+
+
