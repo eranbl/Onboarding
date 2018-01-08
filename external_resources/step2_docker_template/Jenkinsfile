@@ -1,0 +1,69 @@
+node() {
+
+    def rtServer = Artifactory.server('RT_GCP_1')
+    def rtDocker = Artifactory.docker server: rtServer
+    def workspace = pwd()
+    def BUILD_NUMBER = currentBuild.number
+    def testResult
+
+    stage ('Build'){
+        git url: 'https://github.com/eranbl/Onboarding.git'
+    }
+
+    stage ('Docker build')
+    dir ('external_resources/step2_docker_template'){
+        docker.build('docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER')
+    }
+
+    stage ('buildinfo'){
+        echo "$BUILD_NUMBER"
+        def dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER", 'docker'
+        rtServer.publishBuildInfo dockerBuildInfo
+    }
+
+    stage ('Docker Test'){
+        testResult = testImage('docker.onboarding.gcp.ha/onboarding-template:$BUILD_NUMBER')
+    }
+
+
+    stage ('Docker Build Promotion'){
+        if(testResult){
+            def promotionConfig = [
+                    'buildName'          : env.JOB_NAME,
+                    'buildNumber'        : env.BUILD_NUMBER,
+                    'targetRepo'         : 'onboarding-docker-prod-local',
+                    //'comment'            : 'Framework test with latest version of application',
+                    'sourceRepo'         : 'onboarding-docker-dev-local',
+                    'status'             : 'Released',
+                    'includeDependencies': false,
+                    'copy'               : true
+            ]
+            rtServer.promote promotionConfig
+        }
+        else{
+            echo 'promotion failed due to error in the docker build'
+        }
+    }
+}
+/*--------------------------------------------------------------------------------*/
+
+def testImage(tag){
+    def result = true
+    docker.image(tag).inside {c ->
+        sleep 1
+        def statusCode = sh(script: 'java -version', returnStatus: true)
+
+        if (statusCode == 0) {
+            println "*** Passed Test: " + statusCode
+        }
+        else {
+            println "*** Failed Test: " + statusCode
+            result = false
+        }
+    }
+    return result
+}
+
+
+
+
