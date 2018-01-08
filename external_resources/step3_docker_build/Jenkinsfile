@@ -5,8 +5,8 @@ node() {
     def workspace = pwd()
     def BUILD_NUMBER = currentBuild.number
     def testResult
-    def dockerBuildInfo = Artifactory.newBuildInfo()
-    dockerBuildInfo.env.capture = true
+    def buildInfo = Artifactory.newBuildInfo()
+    buildInfo.env.capture = true
 
     stage ('Git Clone'){
         git url: 'https://github.com/eranbl/Onboarding.git'
@@ -24,7 +24,7 @@ node() {
                         }"""
         // /Users/eranb/work/oracle_project/employees-app/external_resources/step3_docker_build
         ///com/example/employees/employees-app/2.0/employees-app-2.0-jar-with-dependencies.jar
-        rtServer.download spec: downloadSpec, buildInfo: dockerBuildInfo
+        rtServer.download spec: downloadSpec, buildInfo: buildInfo
     }
     stage ('Docker build')
     dir ('external_resources/step3_docker_build'){
@@ -33,9 +33,11 @@ node() {
 
     stage ('buildinfo'){
         echo "$BUILD_NUMBER"
-        dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER", 'docker'
+
+        def dockerBuildInfo = rtDocker.push "docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER", 'docker'
         //dockerBuildInfo.env.collect()
-        rtServer.publishBuildInfo dockerBuildInfo
+        buildInfo.append dockerBuildInfo
+        rtServer.publishBuildInfo buildInfo
     }
 
     stage ('Docker Test'){
