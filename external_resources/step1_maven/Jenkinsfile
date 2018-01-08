@@ -1,0 +1,30 @@
+node
+        {
+
+            def rtServer = Artifactory.server('RT_GCP_1')
+            def rtMaven = Artifactory.newMavenBuild()
+            def buildInfo = Artifactory.newBuildInfo()
+
+            stage ('Build'){
+                git url: 'https://github.com/eranbl/Onboarding.git'
+            }
+
+            stage ('Artifactory configuration'){
+                rtMaven.tool = 'Maven_Master' // Tool name from Jenkins configuration
+                rtMaven.deployer server: rtServer, releaseRepo: 'onboarding-maven-release-local', snapshotRepo: 'onboarding-maven-snapshot-local'
+                rtMaven.resolver server: rtServer, releaseRepo: 'libs-release', snapshotRepo: 'libs-snapshot'
+                //rtMaven.deployer.addProperty("unit-test", "pass").addProperty("qa-team", "platform", "ui")
+                buildInfo.env.capture = true
+            }
+
+            stage ('Exec Maven'){
+                rtMaven.run pom: 'pom.xml', goals: 'clean install', buildInfo: buildInfo
+            }
+
+            stage ('Publish & Scan'){
+
+                rtServer.publishBuildInfo buildInfo
+
+            }
+
+        }
