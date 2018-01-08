@@ -39,6 +39,17 @@ node() {
         rtServer.publishBuildInfo buildInfo
     }
 
+
+    stage ('Xray Scan'){
+        def scanConfig = [
+                'buildName'     : buildInfo.name,
+                'buildNumber'   : buildInfo.number,
+                'failBuild'     : false
+        ]
+
+        def scanResult = rtServer.xrayScan scanConfig
+        echo scanResult as String
+    }
     stage ('Docker Test'){
         testResult = testImage('docker.onboarding.gcp.ha/onboarding-docker-app:$BUILD_NUMBER')
     }
